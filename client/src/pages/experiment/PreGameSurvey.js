@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+
 import {
   SurveyContainer,
   SurveyCard,
@@ -21,9 +23,11 @@ import {
 } from './surveyOptions';
 
 import { useTheme } from '../../context/ThemeContext';
+import { updateUserSettings } from '../../store/thunks';
 
 function PreGameSurvey() {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
 
   const [demographics, setDemographics] = useState({
     age: '',
@@ -38,6 +42,7 @@ function PreGameSurvey() {
   const [answers, setAnswers] = useState({
     comfort: '',
     personalInformation: '',
+    hiddenFact: '',
   });
 
   useEffect(() => {
@@ -94,6 +99,30 @@ function PreGameSurvey() {
       ...previous,
       [question]: value,
     }));
+  };
+
+  const handleSubmit = async () => {
+    const formData = {
+      survey: {
+        comfort: answers.comfort,
+        personalInformation: answers.personalInformation,
+        hiddenFact: answers.hiddenFact,
+        interests,
+        pets,
+        collections,
+        demographics,
+      },
+    };
+
+    console.log('Form submission:', formData);
+
+    const result = await dispatch(updateUserSettings(formData));
+
+    if (updateUserSettings.fulfilled.match(result)) {
+      console.log('Survey successfully saved!');
+    } else {
+      console.error('Failed to save survey:', result.payload);
+    }
   };
 
   return (
@@ -227,6 +256,32 @@ function PreGameSurvey() {
           ))}
         </SelectionOptions>
 
+        {/* SOMETHING PEOPLE WOULDN'T GUESS */}
+
+        <Question $background={theme.colors.primaryButton} $color="white">
+          What's one thing people wouldn't guess about you?
+        </Question>
+
+        <Instructions $color={theme.colors.text}>Share anything you'd like!</Instructions>
+
+        <textarea
+          value={answers.hiddenFact}
+          onChange={(event) => handleAnswer('hiddenFact', event.target.value)}
+          placeholder="Tell us something interesting about yourself..."
+          rows={4}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '12px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.colors.cardBorder}`,
+            background: theme.colors.card,
+            color: theme.colors.text,
+            fontSize: '16px',
+            resize: 'vertical',
+          }}
+        />
+
         {/* DEMOGRAPHICS */}
 
         <Question $background={theme.colors.primaryButton} $color="white">
@@ -307,6 +362,26 @@ function PreGameSurvey() {
             </SelectionOption>
           ))}
         </SelectionOptions>
+
+        {/* SUBMIT */}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          style={{
+            marginTop: '30px',
+            padding: '12px 24px',
+            border: 'none',
+            borderRadius: '8px',
+            background: theme.colors.primaryButton,
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          Submit
+        </button>
       </SurveyCard>
     </SurveyContainer>
   );

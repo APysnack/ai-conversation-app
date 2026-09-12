@@ -4,6 +4,7 @@ import {
   SIGN_IN_MUTATION,
   SIGN_UP_MUTATION,
   SIGN_OUT_MUTATION,
+  UPDATE_SETTINGS_MUTATION,
 } from '../../utils/graphqlQueries';
 import client from '../../utils/apolloClient';
 
@@ -82,6 +83,28 @@ export const fetchCurrentUser = createAsyncThunk(
     } catch (error) {
       // User is not authenticated, return null instead of rejecting
       return null;
+    }
+  }
+);
+
+export const updateUserSettings = createAsyncThunk(
+  'user/updateSettings',
+  async (settings, { rejectWithValue }) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_SETTINGS_MUTATION,
+        variables: { settings },
+      });
+
+      if (data.updateSettings.success) {
+        // Refetch current user to update Apollo cache
+        await client.query({ query: GET_CURRENT_USER });
+        return data.updateSettings.user;
+      } else {
+        return rejectWithValue(data.updateSettings.message);
+      }
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
   }
 );
