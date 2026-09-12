@@ -28,6 +28,12 @@ export const DashboardTitle = styled.h1`
   color: ${(props) => props.$color};
 `;
 
+export const DashboardButtonContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+`;
+
 export const LogoutButton = styled.button`
   background: ${(props) => props.$background};
   color: ${(props) => props.$textColor};
