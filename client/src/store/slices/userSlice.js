@@ -1,5 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { signInUser, signUpUser, signOutUser, fetchCurrentUser } from '../thunks';
+
+import {
+  signInUser,
+  signUpUser,
+  signOutUser,
+  fetchCurrentUser,
+  updateUserSettings,
+} from '../thunks';
 
 const initialState = {
   user: null,
@@ -70,6 +77,22 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.user = null;
+      });
+
+    // Update User Settings
+    builder
+      .addCase(updateUserSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateUserSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
