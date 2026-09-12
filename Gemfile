@@ -17,6 +17,7 @@ gem "bootsnap", require: false
 gem "rack-cors"
 gem "rack-attack", "~> 6.7"
 
+
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ]
   gem "pry-byebug"
@@ -27,3 +28,5 @@ group :development do
   gem "error_highlight", ">= 0.4.0", platforms: [:ruby]
 end
 
+
+gem "httpx", "~> 1.8"
