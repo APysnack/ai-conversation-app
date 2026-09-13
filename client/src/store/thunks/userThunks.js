@@ -6,6 +6,7 @@ import {
   SIGN_OUT_MUTATION,
   UPDATE_SETTINGS_MUTATION,
   TEST_GEMINI_MUTATION,
+  GENERATE_IMAGES_MUTATION,
 } from '../../utils/graphqlQueries';
 import client from '../../utils/apolloClient';
 
@@ -125,3 +126,25 @@ export const testGemini = createAsyncThunk('user/testGemini', async (_, { reject
     return rejectWithValue(error.message);
   }
 });
+
+export const generateImages = createAsyncThunk(
+  'user/generateImages',
+  async (answers, { rejectWithValue }) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: GENERATE_IMAGES_MUTATION,
+        variables: {
+          answers,
+        },
+      });
+
+      if (data.generateImages.success) {
+        return data.generateImages.images;
+      } else {
+        return rejectWithValue('Image generation failed');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);

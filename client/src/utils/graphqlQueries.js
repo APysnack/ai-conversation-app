@@ -77,3 +77,12 @@ export const TEST_GEMINI_MUTATION = gql`
     }
   }
 `;
+
+export const GENERATE_IMAGES_MUTATION = gql`
+  mutation GenerateImages($answers: [String!]!) {
+    generateImages(answers: $answers) {
+      success
+      images
+    }
+  }
+`;

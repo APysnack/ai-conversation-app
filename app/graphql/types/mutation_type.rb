@@ -5,5 +5,6 @@ module Types
     field :sign_out, resolver: Mutations::SignOut
     field :update_settings, resolver: Mutations::UpdateSettings
     field :test_gemini, resolver: Mutations::TestGemini
+    field :generate_images, resolver: Mutations::GenerateImages
   end
 end
