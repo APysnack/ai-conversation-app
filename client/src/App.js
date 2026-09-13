@@ -15,6 +15,7 @@ import AuthRoute from './pages/auth/AuthRoute';
 import Game from './pages/experiment/Game';
 import PostGameSurvey from './pages/experiment/PostGameSurvey';
 import PreGameSurvey from './pages/experiment/PreGameSurvey';
+import UserData from './pages/experiment/UserData';
 
 function App() {
   const dispatch = useDispatch();
@@ -42,6 +43,7 @@ function App() {
             <Route path="/game" element={<ProtectedRoute element={<Game />} />} />
             <Route path="/pregame" element={<ProtectedRoute element={<PreGameSurvey />} />} />
             <Route path="/postgame" element={<ProtectedRoute element={<PostGameSurvey />} />} />
+            <Route path="/data" element={<ProtectedRoute element={<UserData />} />} />
           </Routes>
         </Router>
       </ThemeProvider>

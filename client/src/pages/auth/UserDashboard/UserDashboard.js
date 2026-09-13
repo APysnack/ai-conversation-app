@@ -20,6 +20,10 @@ function UserDashboard() {
           <Link to="/postgame">
             <button>Post-game Survey</button>
           </Link>
+
+          <Link to="/data">
+            <button>View My Data</button>
+          </Link>
         </DashboardButtonContainer>
       </DashboardCard>
     </DashboardContainer>
