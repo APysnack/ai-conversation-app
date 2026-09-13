@@ -22,7 +22,11 @@ module Mutations
         images: []
       } unless partner
 
+      current_pre_game_survey = user.settings&.dig("preGameSurvey") || {}
       partner_pre_game_survey = partner.settings&.dig("preGameSurvey") || {}
+
+      # Get the system settings from the single source of truth.
+      system_settings = GameConfiguration::SYSTEM_SETTINGS
 
       saved_interactions = []
 
@@ -31,7 +35,13 @@ module Mutations
         image_prompt = interaction["response"]
 
         begin
-          result = ImageGenerationService.generate(image_prompt)
+          result = ImageGenerationService.generate(
+            response: image_prompt,
+            question: question,
+            current_user_information: current_pre_game_survey,
+            partner_information: partner_pre_game_survey,
+            system_settings: system_settings
+          )
 
           image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
 
@@ -53,13 +63,15 @@ module Mutations
         end
       end
 
-    game_data = {
-      "gameId" => game_id,
-      "partnerUserId" => partner_user_id,
-      "partnerEmail" => partner.email,
-      "partnerPreGameSurvey" => partner_pre_game_survey,
-      "interactions" => saved_interactions
-    }
+      game_data = {
+        "gameId" => game_id,
+        "partnerUserId" => partner_user_id,
+        "partnerEmail" => partner.email,
+        "partnerPreGameSurvey" => partner_pre_game_survey,
+        "systemSettings" => system_settings,
+        "interactions" => saved_interactions
+      }
+
       # Preserve previous games instead of replacing gameData.
       existing_game_data = user.settings&.dig("gameData") || []
 
