@@ -158,7 +158,7 @@ function Game() {
             cursor: 'pointer',
           }}
         >
-          Test Gemini
+          Generate Questions
         </button>
 
         <form onSubmit={handleSubmit}>
