@@ -16,10 +16,11 @@ module Mutations
 
       saved_interactions = []
 
-      interactions.each do |interaction|
-        question = interaction["question"]
-        image_prompt = interaction["response"]
+    interactions.each do |interaction|
+      question = interaction["question"]
+      image_prompt = interaction["response"]
 
+      begin
         result = ImageGenerationService.generate(image_prompt)
 
         image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
@@ -29,7 +30,16 @@ module Mutations
           "response" => image_prompt,
           "imageUrl" => image_data
         }
+      rescue StandardError => e
+        Rails.logger.error("Image generation failed for interaction: #{e.message}")
+
+        saved_interactions << {
+          "question" => question,
+          "response" => image_prompt,
+          "imageUrl" => nil
+        }
       end
+    end
 
       game_data = {
         "gameId" => game_id,
