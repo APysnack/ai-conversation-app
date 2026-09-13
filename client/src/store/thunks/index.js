@@ -5,4 +5,5 @@ export {
   fetchCurrentUser,
   updateUserSettings,
   testGemini,
+  generateImages,
 } from './userThunks';
