@@ -5,7 +5,9 @@ module Mutations
     field :success, Boolean, null: false
     field :questions, [String], null: false
 
-    def resolve
+    argument :partner_user_id, String, required: true
+
+    def resolve(partner_user_id:)
       user = context[:current_user]
 
       return {
@@ -13,7 +15,15 @@ module Mutations
         questions: []
       } unless user
 
-      response = GeminiService.test(user.settings["survey"])
+      partner = User.find(partner_user_id)
+
+      current_user_survey = user.settings["survey"]
+      partner_survey = partner.settings["survey"]
+
+      response = GeminiService.test(
+        current_user_survey,
+        partner_survey
+      )
 
       parsed_response = JSON.parse(response)
 

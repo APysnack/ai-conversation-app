@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 import { SurveyContainer, SurveyCard, Instructions, Question } from './PreGameSurvey.styles';
 
 import { useTheme } from '../../context/ThemeContext';
-import { testGemini, generateImages } from '../../store/thunks';
+import { testGemini, generateImages, fetchUsers } from '../../store/thunks';
 
 function Game() {
   const { theme } = useTheme();
@@ -14,6 +14,11 @@ function Game() {
   const [generatedImages, setGeneratedImages] = useState([]);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
 
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(false);
+  const [selectedPartnerId, setSelectedPartnerId] = useState('');
+
   const [answers, setAnswers] = useState({
     question1: '',
     question2: '',
@@ -22,8 +27,30 @@ function Game() {
 
   const [gameId] = useState(() => crypto.randomUUID());
 
+  useEffect(() => {
+    const loadUsers = async () => {
+      const result = await dispatch(fetchUsers());
+
+      if (fetchUsers.fulfilled.match(result)) {
+        setUsers(result.payload);
+      } else {
+        console.error('Failed to load users:', result.payload);
+        setUsersError(true);
+      }
+
+      setUsersLoading(false);
+    };
+
+    loadUsers();
+  }, [dispatch]);
+
   const handleTestGemini = async () => {
-    const result = await dispatch(testGemini());
+    if (!selectedPartnerId) {
+      console.error('Please select a conversation partner first.');
+      return;
+    }
+
+    const result = await dispatch(testGemini(selectedPartnerId));
 
     if (testGemini.fulfilled.match(result)) {
       console.log('Gemini response:', result.payload);
@@ -81,6 +108,42 @@ function Game() {
   return (
     <SurveyContainer $background={theme.colors.background}>
       <SurveyCard $background={theme.colors.card}>
+        <div style={{ marginBottom: '24px' }}>
+          <Instructions $color={theme.colors.text}>Select your conversation partner</Instructions>
+
+          <select
+            value={selectedPartnerId}
+            onChange={(event) => setSelectedPartnerId(event.target.value)}
+            disabled={usersLoading}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '12px',
+              borderRadius: '8px',
+              border: `1px solid ${theme.colors.cardBorder}`,
+              background: theme.colors.card,
+              color: theme.colors.text,
+              fontSize: '16px',
+            }}
+          >
+            <option value="">{usersLoading ? 'Loading users...' : 'Select a user...'}</option>
+
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.email}
+              </option>
+            ))}
+          </select>
+
+          {usersError && (
+            <Instructions $color={theme.colors.text}>Unable to load users.</Instructions>
+          )}
+
+          {selectedPartnerId && (
+            <Instructions $color={theme.colors.text}>Partner selected.</Instructions>
+          )}
+        </div>
+
         <button
           type="button"
           onClick={handleTestGemini}
