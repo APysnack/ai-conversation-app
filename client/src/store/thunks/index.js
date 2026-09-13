@@ -4,4 +4,5 @@ export {
   signOutUser,
   fetchCurrentUser,
   updateUserSettings,
+  testGemini,
 } from './userThunks';
