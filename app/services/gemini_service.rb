@@ -8,12 +8,12 @@ class GeminiService
     current_user_information ||= "[CURRENT PARTICIPANT INFORMATION WILL GO HERE]"
     partner_information ||= "[PARTNER INFORMATION WILL GO HERE]"
 
-    # Temporary game configuration.
-    # These will eventually come from the game's customizable settings.
-    humor = "high"
-    ambiguity = "high"
-    personalness = "high"
-    visual_style = "cartoon"
+    system_settings = GameConfiguration::SYSTEM_SETTINGS
+
+    humor = system_settings["humor"]
+    ambiguity = system_settings["ambiguity"]
+    personalness = system_settings["personalness"]
+    visual_style = system_settings["visualStyle"]
 
     prompt = <<~PROMPT
       You are helping facilitate a conversation between two people who have just met.

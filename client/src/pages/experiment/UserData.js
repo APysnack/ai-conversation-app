@@ -123,8 +123,10 @@ function UserData() {
 
 function GameDataSection({ game, gameIndex, theme }) {
   const [showPartnerInfo, setShowPartnerInfo] = useState(false);
+  const [showSystemSettings, setShowSystemSettings] = useState(false);
 
   const partnerSurvey = game.partnerPreGameSurvey || {};
+  const systemSettings = game.systemSettings || {};
 
   return (
     <div
@@ -141,6 +143,56 @@ function GameDataSection({ game, gameIndex, theme }) {
       >
         Game {gameIndex + 1}
       </h2>
+
+      {/* SYSTEM SETTINGS TOGGLE */}
+
+      {game.systemSettings ? (
+        <div style={{ marginBottom: '20px' }}>
+          <button
+            type="button"
+            onClick={() => setShowSystemSettings((previous) => !previous)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: `1px solid ${theme.colors.cardBorder}`,
+              borderRadius: '8px',
+              background: theme.colors.background,
+              color: theme.colors.text,
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            {showSystemSettings ? 'Hide System Settings ▲' : 'Show System Settings ▼'}
+          </button>
+
+          {showSystemSettings && (
+            <div style={{ marginTop: '10px' }}>
+              <DataCard theme={theme}>
+                <DataRow label="Humor" value={systemSettings.humor} theme={theme} />
+
+                <DataRow label="Ambiguity" value={systemSettings.ambiguity} theme={theme} />
+
+                <DataRow label="Personalness" value={systemSettings.personalness} theme={theme} />
+
+                <DataRow label="Visual style" value={systemSettings.visualStyle} theme={theme} />
+              </DataCard>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Instructions
+          $color={theme.colors.text}
+          style={{
+            fontSize: '13px',
+            marginBottom: '20px',
+            opacity: 0.7,
+          }}
+        >
+          System settings were not saved for this game.
+        </Instructions>
+      )}
 
       {/* PARTNER INFORMATION TOGGLE */}
 
@@ -183,6 +235,8 @@ function GameDataSection({ game, gameIndex, theme }) {
       )}
 
       {/* INTERACTIONS */}
+
+      <SubsectionTitle title="Interactions" theme={theme} />
 
       {!game.interactions || game.interactions.length === 0 ? (
         <Instructions $color={theme.colors.text}>No interactions recorded.</Instructions>
@@ -260,6 +314,7 @@ function PartnerInformation({ email, survey, theme }) {
       }}
     >
       <DataRow label="Email" value={email} theme={theme} />
+
       <DataRow label="Interests" value={formatArray(survey.interests)} theme={theme} />
 
       <DataRow label="Pets" value={formatArray(survey.pets)} theme={theme} />
