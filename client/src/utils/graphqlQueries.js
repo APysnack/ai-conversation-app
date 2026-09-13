@@ -68,3 +68,12 @@ export const UPDATE_SETTINGS_MUTATION = gql`
     }
   }
 `;
+
+export const TEST_GEMINI_MUTATION = gql`
+  mutation TestGemini {
+    testGemini {
+      success
+      questions
+    }
+  }
+`;

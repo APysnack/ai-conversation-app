@@ -5,6 +5,7 @@ import {
   SIGN_UP_MUTATION,
   SIGN_OUT_MUTATION,
   UPDATE_SETTINGS_MUTATION,
+  TEST_GEMINI_MUTATION,
 } from '../../utils/graphqlQueries';
 import client from '../../utils/apolloClient';
 
@@ -108,3 +109,19 @@ export const updateUserSettings = createAsyncThunk(
     }
   }
 );
+
+export const testGemini = createAsyncThunk('user/testGemini', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await client.mutate({
+      mutation: TEST_GEMINI_MUTATION,
+    });
+
+    if (data.testGemini.success) {
+      return data.testGemini.questions;
+    } else {
+      return rejectWithValue('Gemini request failed');
+    }
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
