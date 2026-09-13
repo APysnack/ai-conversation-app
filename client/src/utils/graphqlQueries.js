@@ -70,8 +70,8 @@ export const UPDATE_SETTINGS_MUTATION = gql`
 `;
 
 export const TEST_GEMINI_MUTATION = gql`
-  mutation TestGemini($partnerUserId: String!) {
-    testGemini(partnerUserId: $partnerUserId) {
+  mutation TestGemini($partnerUserId: String!, $systemSettings: JSON!) {
+    testGemini(partnerUserId: $partnerUserId, systemSettings: $systemSettings) {
       success
       questions
     }
@@ -79,8 +79,18 @@ export const TEST_GEMINI_MUTATION = gql`
 `;
 
 export const GENERATE_IMAGES_MUTATION = gql`
-  mutation GenerateImages($gameId: String!, $partnerUserId: String!, $interactions: [JSON!]!) {
-    generateImages(gameId: $gameId, partnerUserId: $partnerUserId, interactions: $interactions) {
+  mutation GenerateImages(
+    $gameId: String!
+    $partnerUserId: String!
+    $interactions: [JSON!]!
+    $systemSettings: JSON!
+  ) {
+    generateImages(
+      gameId: $gameId
+      partnerUserId: $partnerUserId
+      interactions: $interactions
+      systemSettings: $systemSettings
+    ) {
       success
       images
     }
