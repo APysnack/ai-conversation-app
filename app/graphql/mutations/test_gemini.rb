@@ -3,7 +3,7 @@ require "json"
 module Mutations
   class TestGemini < GraphQL::Schema::Mutation
     field :success, Boolean, null: false
-    field :questions, [String], null: false
+    field :questions, [GraphQL::Types::JSON], null: false
 
     argument :partner_user_id, String, required: true
     argument :system_settings, GraphQL::Types::JSON, required: true

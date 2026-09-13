@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 
 import { SurveyContainer, SurveyCard, Question, Instructions } from './PreGameSurvey.styles';
 
@@ -13,7 +14,6 @@ function UserData() {
   const settings = currentUser?.settings || {};
 
   const preGameSurvey = settings.preGameSurvey || {};
-  const postGameSurvey = settings.postGameSurvey || {};
   const gameData = settings.gameData || [];
 
   const demographics = preGameSurvey.demographics || {};
@@ -90,27 +90,11 @@ function UserData() {
               key={game.gameId || gameIndex}
               game={game}
               gameIndex={gameIndex}
+              participantSurvey={preGameSurvey}
+              participantEmail={currentUser?.email}
               theme={theme}
             />
           ))
-        )}
-
-        {/* ==================== POST-GAME SURVEY ==================== */}
-
-        <SectionTitle title="Post-game Survey" theme={theme} />
-
-        {postGameSurvey.interactionAgain ? (
-          <DataCard theme={theme}>
-            <DataRow
-              label="Likelihood of interacting with this person again"
-              value={formatInteractionAgain(postGameSurvey.interactionAgain)}
-              theme={theme}
-            />
-          </DataCard>
-        ) : (
-          <Instructions $color={theme.colors.text}>
-            Post-game survey has not been completed yet.
-          </Instructions>
         )}
       </SurveyCard>
     </SurveyContainer>
@@ -121,12 +105,18 @@ function UserData() {
    GAME DATA
    ============================================================ */
 
-function GameDataSection({ game, gameIndex, theme }) {
+function GameDataSection({ game, gameIndex, participantSurvey, participantEmail, theme }) {
+  const [showParticipantInfo, setShowParticipantInfo] = useState(false);
+
   const [showPartnerInfo, setShowPartnerInfo] = useState(false);
+
   const [showSystemSettings, setShowSystemSettings] = useState(false);
 
   const partnerSurvey = game.partnerPreGameSurvey || {};
+
   const systemSettings = game.systemSettings || {};
+
+  const hasPostGameSurvey = !!game.postGameSurvey;
 
   return (
     <div
@@ -144,7 +134,7 @@ function GameDataSection({ game, gameIndex, theme }) {
         Game {gameIndex + 1}
       </h2>
 
-      {/* SYSTEM SETTINGS TOGGLE */}
+      {/* ==================== SYSTEM SETTINGS ==================== */}
 
       {game.systemSettings ? (
         <div style={{ marginBottom: '20px' }}>
@@ -194,7 +184,53 @@ function GameDataSection({ game, gameIndex, theme }) {
         </Instructions>
       )}
 
-      {/* PARTNER INFORMATION TOGGLE */}
+      {/* ==================== PARTICIPANT INFORMATION ==================== */}
+
+      {participantSurvey ? (
+        <div style={{ marginBottom: '20px' }}>
+          <button
+            type="button"
+            onClick={() => setShowParticipantInfo((previous) => !previous)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              border: `1px solid ${theme.colors.cardBorder}`,
+              borderRadius: '8px',
+              background: theme.colors.background,
+              color: theme.colors.text,
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            {showParticipantInfo
+              ? 'Hide Participant Information ▲'
+              : 'Show Participant Information ▼'}
+          </button>
+
+          {showParticipantInfo && (
+            <ParticipantInformation
+              email={participantEmail}
+              survey={participantSurvey}
+              theme={theme}
+            />
+          )}
+        </div>
+      ) : (
+        <Instructions
+          $color={theme.colors.text}
+          style={{
+            fontSize: '13px',
+            marginBottom: '20px',
+            opacity: 0.7,
+          }}
+        >
+          Participant information was not saved for this game.
+        </Instructions>
+      )}
+
+      {/* ==================== PARTNER INFORMATION ==================== */}
 
       {game.partnerPreGameSurvey ? (
         <div style={{ marginBottom: '20px' }}>
@@ -234,7 +270,7 @@ function GameDataSection({ game, gameIndex, theme }) {
         </Instructions>
       )}
 
-      {/* INTERACTIONS */}
+      {/* ==================== INTERACTIONS ==================== */}
 
       <SubsectionTitle title="Interactions" theme={theme} />
 
@@ -294,6 +330,81 @@ function GameDataSection({ game, gameIndex, theme }) {
           </InteractionCard>
         ))
       )}
+
+      {/* ==================== POST-GAME SURVEY ==================== */}
+
+      <div
+        style={{
+          marginTop: '25px',
+        }}
+      >
+        {hasPostGameSurvey ? (
+          <DataCard theme={theme}>
+            <DataRow
+              label="Likelihood of interacting with this person again"
+              value={formatInteractionAgain(game.postGameSurvey.interactionAgain)}
+              theme={theme}
+            />
+          </DataCard>
+        ) : (
+          <Link
+            to={`/postgame/${game.gameId}`}
+            style={{
+              textDecoration: 'none',
+            }}
+          >
+            <button
+              type="button"
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                border: 'none',
+                borderRadius: '8px',
+                background: theme.colors.primaryButton,
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              Fill Out Post-Game Survey
+            </button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   PARTICIPANT INFORMATION
+   ============================================================ */
+
+function ParticipantInformation({ email, survey, theme }) {
+  return (
+    <div
+      style={{
+        marginTop: '10px',
+        padding: '5px 18px',
+        background: theme.colors.background,
+        border: `1px solid ${theme.colors.cardBorder}`,
+        borderRadius: '8px',
+      }}
+    >
+      <DataRow label="Email" value={email} theme={theme} />
+
+      <DataRow label="Interests" value={formatArray(survey.interests)} theme={theme} />
+
+      <DataRow label="Pets" value={formatArray(survey.pets)} theme={theme} />
+
+      <DataRow label="Collections" value={formatArray(survey.collections)} theme={theme} />
+
+      <DataRow
+        label="Something people wouldn't guess"
+        value={survey.hiddenFact}
+        theme={theme}
+        multiline
+      />
     </div>
   );
 }
