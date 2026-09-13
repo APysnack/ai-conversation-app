@@ -260,6 +260,52 @@ class GeminiService
       - The wording feels casual and playful rather than formal or academic.
       - The prompts are appropriate for the configured humor, ambiguity, and personalness levels.
 
+      ### FACT ATTRIBUTION CHECK
+
+      For every generated question, independently inspect the two participant records.
+
+      Treat these as TWO SEPARATE SOURCES OF FACTS:
+
+      SOURCE A = CURRENT PARTICIPANT INFORMATION
+
+      SOURCE B = PARTNER INFORMATION
+
+      "currentFactsUsed" may ONLY contain exact values that appear in SOURCE A.
+
+      "partnerFactsUsed" may ONLY contain exact values that appear in SOURCE B.
+
+      Never copy a fact from SOURCE A into "partnerFactsUsed".
+
+      Never copy a fact from SOURCE B into "currentFactsUsed".
+
+      A fact may appear in BOTH arrays ONLY if that exact value independently appears in BOTH SOURCE A and SOURCE B.
+
+      Do not put a fact into an array merely because it is generally related to the other participant.
+
+      Do not put the same fact into both arrays simply because it is relevant to the overall question.
+
+      Each fact listed in either array must have genuinely influenced that specific question.
+
+      If no partner fact genuinely influenced a question, return an empty array:
+
+      "partnerFactsUsed": []
+
+      If no current-participant fact genuinely influenced a question, return an empty array:
+
+      "currentFactsUsed": []
+
+      It is better to return an empty array than to incorrectly attribute a fact to the wrong participant.
+
+      Before returning each question, perform this check:
+
+      1. Find every value in "currentFactsUsed".
+      2. Confirm that the exact value exists in CURRENT PARTICIPANT INFORMATION.
+      3. Find every value in "partnerFactsUsed".
+      4. Confirm that the exact value exists in PARTNER INFORMATION.
+      5. If a value does not exist in the corresponding participant's data, remove it.
+      6. If a value exists only in the other participant's data, move it to the correct array if it genuinely influenced the question.
+      7. If it did not genuinely influence the question, remove it.
+
       Do not output this verification.
 
       ## Output
@@ -288,11 +334,52 @@ class GeminiService
 
       For each question:
 
-      - "currentFactsUsed" must contain the exact value(s) from the CURRENT PARTICIPANT INFORMATION that influenced the question.
-      - "partnerFactsUsed" must contain the exact value(s) from the PARTNER INFORMATION that influenced the question.
-      - Copy the facts exactly as they appear in the supplied JSON.
-      - Do not paraphrase or invent facts.
-      - The facts should genuinely have influenced the corresponding question.
+      - "currentFactsUsed" is an audit trail of CURRENT PARTICIPANT facts only.
+      - "partnerFactsUsed" is an audit trail of PARTNER facts only.
+      - Copy each fact exactly as it appears in the corresponding participant's JSON.
+      - Do not paraphrase facts.
+      - Do not invent facts.
+      - Do not infer facts that are not explicitly present.
+      - Do not place the same value in both arrays unless that exact value appears independently in both participant records.
+      - Do not list a fact simply because it would make the question sound relevant.
+      - Only list facts that genuinely influenced the wording or direction of that specific question.
+      - Empty arrays are valid and preferable to incorrect attribution.
+
+      Example:
+
+      If CURRENT PARTICIPANT INFORMATION contains:
+
+      {"interests":["Psychology / philosophy","Comedy"]}
+
+      and PARTNER INFORMATION contains:
+
+      {"interests":["Music","Performing"]}
+
+      then this is valid:
+
+      {
+        "question": "What is a strange theory about people you've developed from your own experiences?",
+        "currentFactsUsed": ["Psychology / philosophy"],
+        "partnerFactsUsed": []
+      }
+
+      And this is valid:
+
+      {
+        "question": "What's something about performing that you find unexpectedly funny?",
+        "currentFactsUsed": ["Comedy"],
+        "partnerFactsUsed": ["Performing"]
+      }
+
+      But this is INVALID:
+
+      {
+        "question": "...",
+        "currentFactsUsed": ["Psychology / philosophy"],
+        "partnerFactsUsed": ["Psychology / philosophy"]
+      }
+
+      unless "Psychology / philosophy" independently appears in BOTH participant records.
 
       Return ONLY the JSON object. Do not include markdown, code fences, explanations, labels, or additional commentary.
     PROMPT

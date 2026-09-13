@@ -95,7 +95,10 @@ export const fetchUsers = createAsyncThunk('user/fetchUsers', async (_, { reject
       query: GET_USERS,
     });
 
-    return data.users;
+    return {
+      users: data.users,
+      currentUserId: data.currentUser?.id,
+    };
   } catch (error) {
     return rejectWithValue(error.message);
   }

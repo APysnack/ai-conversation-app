@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useTheme } from '../../context/ThemeContext';
 
 import { SurveyContainer, SurveyCard, Instructions, Question } from './PreGameSurvey.styles';
 
-import { useTheme } from '../../context/ThemeContext';
 import { testGemini, generateImages, fetchUsers } from '../../store/thunks';
 
 function Game() {
@@ -15,6 +15,7 @@ function Game() {
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
 
   const [users, setUsers] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState('');
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState(false);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
@@ -39,7 +40,8 @@ function Game() {
       const result = await dispatch(fetchUsers());
 
       if (fetchUsers.fulfilled.match(result)) {
-        setUsers(result.payload);
+        setUsers(result.payload.users);
+        setCurrentUserId(result.payload.currentUserId);
       } else {
         console.error('Failed to load users:', result.payload);
         setUsersError(true);
@@ -50,6 +52,12 @@ function Game() {
 
     loadUsers();
   }, [dispatch]);
+
+  useEffect(() => {
+    if (selectedPartnerId === currentUserId) {
+      setSelectedPartnerId('');
+    }
+  }, [currentUserId, selectedPartnerId]);
 
   const handleTestGemini = async () => {
     if (!selectedPartnerId) {
@@ -84,15 +92,15 @@ function Game() {
 
     const interactions = [
       {
-        question: geminiQuestions[0],
+        question: geminiQuestions[0].question,
         response: answers.question1,
       },
       {
-        question: geminiQuestions[1],
+        question: geminiQuestions[1].question,
         response: answers.question2,
       },
       {
-        question: geminiQuestions[2],
+        question: geminiQuestions[2].question,
         response: answers.question3,
       },
     ];
@@ -144,11 +152,13 @@ function Game() {
           >
             <option value="">{usersLoading ? 'Loading users...' : 'Select a user...'}</option>
 
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.email}
-              </option>
-            ))}
+            {users
+              .filter((user) => user.id !== currentUserId)
+              .map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.email}
+                </option>
+              ))}
           </select>
 
           {usersError && (
@@ -223,6 +233,7 @@ function Game() {
         <button
           type="button"
           onClick={handleTestGemini}
+          disabled={!selectedPartnerId}
           style={{
             padding: '12px 24px',
             border: 'none',
@@ -231,7 +242,8 @@ function Game() {
             color: 'white',
             fontSize: '16px',
             fontWeight: 'bold',
-            cursor: 'pointer',
+            cursor: !selectedPartnerId ? 'default' : 'pointer',
+            opacity: !selectedPartnerId ? 0.6 : 1,
           }}
         >
           Generate Questions
@@ -243,8 +255,10 @@ function Game() {
           {geminiQuestions[0] && (
             <>
               <Question $background={theme.colors.primaryButton} $color="white">
-                {geminiQuestions[0]}
+                {geminiQuestions[0].question}
               </Question>
+
+              <DebugInfo question={geminiQuestions[0]} theme={theme} />
 
               <Instructions $color={theme.colors.text}>Share anything you'd like!</Instructions>
 
@@ -285,8 +299,10 @@ function Game() {
           {geminiQuestions[1] && (
             <>
               <Question $background={theme.colors.primaryButton} $color="white">
-                {geminiQuestions[1]}
+                {geminiQuestions[1].question}
               </Question>
+
+              <DebugInfo question={geminiQuestions[1]} theme={theme} />
 
               <Instructions $color={theme.colors.text}>Share anything you'd like!</Instructions>
 
@@ -327,8 +343,10 @@ function Game() {
           {geminiQuestions[2] && (
             <>
               <Question $background={theme.colors.primaryButton} $color="white">
-                {geminiQuestions[2]}
+                {geminiQuestions[2].question}
               </Question>
+
+              <DebugInfo question={geminiQuestions[2]} theme={theme} />
 
               <Instructions $color={theme.colors.text}>Share anything you'd like!</Instructions>
 
@@ -390,6 +408,66 @@ function Game() {
       </SurveyCard>
     </SurveyContainer>
   );
+}
+
+/* ============================================================
+   DEBUG INFORMATION
+   ============================================================ */
+
+function DebugInfo({ question, theme }) {
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
+
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <button
+        type="button"
+        onClick={() => setShowDebugInfo((previous) => !previous)}
+        style={{
+          padding: '6px 10px',
+          border: `1px solid ${theme.colors.cardBorder}`,
+          borderRadius: '6px',
+          background: theme.colors.background,
+          color: theme.colors.text,
+          fontSize: '12px',
+          cursor: 'pointer',
+          opacity: 0.75,
+        }}
+      >
+        {showDebugInfo ? 'Hide Debugging Info ▲' : 'Show Debugging Info ▼'}
+      </button>
+
+      {showDebugInfo && (
+        <div
+          style={{
+            marginTop: '8px',
+            padding: '10px 12px',
+            borderRadius: '6px',
+            background: theme.colors.background,
+            border: `1px solid ${theme.colors.cardBorder}`,
+            color: theme.colors.text,
+            fontSize: '12px',
+            lineHeight: '1.5',
+          }}
+        >
+          <div>
+            <strong>Current facts used:</strong> {formatDebugArray(question.currentFactsUsed)}
+          </div>
+
+          <div>
+            <strong>Partner facts used:</strong> {formatDebugArray(question.partnerFactsUsed)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatDebugArray(value) {
+  if (!Array.isArray(value) || value.length === 0) {
+    return 'None';
+  }
+
+  return value.join(', ');
 }
 
 /* ============================================================
