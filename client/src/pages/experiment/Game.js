@@ -25,6 +25,13 @@ function Game() {
     question3: '',
   });
 
+  const [systemSettings, setSystemSettings] = useState({
+    humor: 'high',
+    ambiguity: 'high',
+    personalness: 'high',
+    visualStyle: 'cartoon',
+  });
+
   const [gameId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
@@ -50,7 +57,12 @@ function Game() {
       return;
     }
 
-    const result = await dispatch(testGemini(selectedPartnerId));
+    const result = await dispatch(
+      testGemini({
+        partnerUserId: selectedPartnerId,
+        systemSettings,
+      })
+    );
 
     if (testGemini.fulfilled.match(result)) {
       console.log('Gemini response:', result.payload);
@@ -93,6 +105,7 @@ function Game() {
         gameId,
         partnerUserId: selectedPartnerId,
         interactions,
+        systemSettings,
       })
     );
 
@@ -109,6 +122,8 @@ function Game() {
   return (
     <SurveyContainer $background={theme.colors.background}>
       <SurveyCard $background={theme.colors.card}>
+        {/* ==================== PARTNER ==================== */}
+
         <div style={{ marginBottom: '24px' }}>
           <Instructions $color={theme.colors.text}>Select your conversation partner</Instructions>
 
@@ -145,6 +160,66 @@ function Game() {
           )}
         </div>
 
+        {/* ==================== SYSTEM SETTINGS ==================== */}
+
+        <div style={{ marginBottom: '24px' }}>
+          <Instructions $color={theme.colors.text}>System Settings</Instructions>
+
+          <SettingSelect
+            label="Humor"
+            value={systemSettings.humor}
+            onChange={(value) =>
+              setSystemSettings((previous) => ({
+                ...previous,
+                humor: value,
+              }))
+            }
+            options={['low', 'medium', 'high']}
+            theme={theme}
+          />
+
+          <SettingSelect
+            label="Ambiguity"
+            value={systemSettings.ambiguity}
+            onChange={(value) =>
+              setSystemSettings((previous) => ({
+                ...previous,
+                ambiguity: value,
+              }))
+            }
+            options={['low', 'medium', 'high']}
+            theme={theme}
+          />
+
+          <SettingSelect
+            label="Personalness"
+            value={systemSettings.personalness}
+            onChange={(value) =>
+              setSystemSettings((previous) => ({
+                ...previous,
+                personalness: value,
+              }))
+            }
+            options={['low', 'medium', 'high']}
+            theme={theme}
+          />
+
+          <SettingSelect
+            label="Visual Style"
+            value={systemSettings.visualStyle}
+            onChange={(value) =>
+              setSystemSettings((previous) => ({
+                ...previous,
+                visualStyle: value,
+              }))
+            }
+            options={['cartoon', 'photorealistic', 'sketch', 'abstract']}
+            theme={theme}
+          />
+        </div>
+
+        {/* ==================== GENERATE QUESTIONS ==================== */}
+
         <button
           type="button"
           onClick={handleTestGemini}
@@ -161,6 +236,8 @@ function Game() {
         >
           Generate Questions
         </button>
+
+        {/* ==================== QUESTIONS ==================== */}
 
         <form onSubmit={handleSubmit}>
           {geminiQuestions[0] && (
@@ -312,6 +389,49 @@ function Game() {
         </form>
       </SurveyCard>
     </SurveyContainer>
+  );
+}
+
+/* ============================================================
+   SETTING SELECT
+   ============================================================ */
+
+function SettingSelect({ label, value, onChange, options, theme }) {
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <label
+        style={{
+          display: 'block',
+          marginBottom: '6px',
+          color: theme.colors.text,
+          fontSize: '14px',
+          fontWeight: '600',
+        }}
+      >
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        style={{
+          width: '100%',
+          boxSizing: 'border-box',
+          padding: '10px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.colors.cardBorder}`,
+          background: theme.colors.card,
+          color: theme.colors.text,
+          fontSize: '15px',
+        }}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

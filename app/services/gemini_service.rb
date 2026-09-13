@@ -2,13 +2,17 @@ require "json"
 require "open3"
 
 class GeminiService
-  def self.test(current_user_information = nil, partner_information = nil)
+  def self.test(
+    current_user_information = nil,
+    partner_information = nil,
+    system_settings = nil
+  )
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
 
     current_user_information ||= "[CURRENT PARTICIPANT INFORMATION WILL GO HERE]"
     partner_information ||= "[PARTNER INFORMATION WILL GO HERE]"
 
-    system_settings = GameConfiguration::SYSTEM_SETTINGS
+    system_settings ||= GameConfiguration::SYSTEM_SETTINGS
 
     humor = system_settings["humor"]
     ambiguity = system_settings["ambiguity"]

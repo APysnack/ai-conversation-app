@@ -6,8 +6,14 @@ module Mutations
     argument :game_id, String, required: true
     argument :partner_user_id, String, required: true
     argument :interactions, [GraphQL::Types::JSON], required: true
+    argument :system_settings, GraphQL::Types::JSON, required: true
 
-    def resolve(game_id:, partner_user_id:, interactions:)
+    def resolve(
+      game_id:,
+      partner_user_id:,
+      interactions:,
+      system_settings:
+    )
       user = context[:current_user]
 
       return {
@@ -22,11 +28,16 @@ module Mutations
         images: []
       } unless partner
 
-      current_pre_game_survey = user.settings&.dig("preGameSurvey") || {}
-      partner_pre_game_survey = partner.settings&.dig("preGameSurvey") || {}
+      current_pre_game_survey =
+        user.settings&.dig("preGameSurvey") || {}
 
-      # Get the system settings from the single source of truth.
-      system_settings = GameConfiguration::SYSTEM_SETTINGS
+      partner_pre_game_survey =
+        partner.settings&.dig("preGameSurvey") || {}
+
+      # Use the settings selected for this particular game.
+      # Fall back to the default configuration if necessary.
+      system_settings ||=
+        GameConfiguration::SYSTEM_SETTINGS
 
       saved_interactions = []
 
@@ -43,7 +54,8 @@ module Mutations
             system_settings: system_settings
           )
 
-          image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
+          image_data =
+            "data:#{result[:mime_type]};base64,#{result[:data]}"
 
           saved_interactions << {
             "question" => question,
@@ -73,7 +85,8 @@ module Mutations
       }
 
       # Preserve previous games instead of replacing gameData.
-      existing_game_data = user.settings&.dig("gameData") || []
+      existing_game_data =
+        user.settings&.dig("gameData") || []
 
       user.update_settings(
         "gameData" => existing_game_data + [game_data]
@@ -81,7 +94,9 @@ module Mutations
 
       {
         success: true,
-        images: saved_interactions.map { |interaction| interaction["imageUrl"] }
+        images: saved_interactions.map {
+          |interaction| interaction["imageUrl"]
+        }
       }
     rescue StandardError => e
       Rails.logger.error(
