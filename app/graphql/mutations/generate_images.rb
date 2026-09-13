@@ -3,9 +3,10 @@ module Mutations
     field :success, Boolean, null: false
     field :images, [String], null: false
 
-    argument :answers, [String], required: true
+    argument :game_id, String, required: true
+    argument :interactions, [GraphQL::Types::JSON], required: true
 
-    def resolve(answers:)
+    def resolve(game_id:, interactions:)
       user = context[:current_user]
 
       return {
@@ -13,17 +14,37 @@ module Mutations
         images: []
       } unless user
 
-      images = answers.map do |_answer|
-        result = ImageGenerationService.generate(
-          "Generate a simple placeholder image for a conversation game."
-        )
+      saved_interactions = []
 
-        "data:#{result[:mime_type]};base64,#{result[:data]}"
+      interactions.each do |interaction|
+        question = interaction["question"]
+        image_prompt = interaction["response"]
+
+        result = ImageGenerationService.generate(image_prompt)
+
+        image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
+
+        saved_interactions << {
+          "question" => question,
+          "response" => image_prompt,
+          "imageUrl" => image_data
+        }
       end
+
+      game_data = {
+        "gameId" => game_id,
+        "interactions" => saved_interactions
+      }
+
+      user.update_settings(
+        "gameData" => [
+          game_data
+        ]
+      )
 
       {
         success: true,
-        images: images
+        images: saved_interactions.map { |interaction| interaction["imageUrl"] }
       }
     rescue StandardError => e
       Rails.logger.error("Image generation error: #{e.class}: #{e.message}")

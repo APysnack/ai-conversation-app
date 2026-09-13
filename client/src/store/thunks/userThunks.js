@@ -129,12 +129,13 @@ export const testGemini = createAsyncThunk('user/testGemini', async (_, { reject
 
 export const generateImages = createAsyncThunk(
   'user/generateImages',
-  async (answers, { rejectWithValue }) => {
+  async ({ gameId, interactions }, { rejectWithValue }) => {
     try {
       const { data } = await client.mutate({
         mutation: GENERATE_IMAGES_MUTATION,
         variables: {
-          answers,
+          gameId,
+          interactions,
         },
       });
 

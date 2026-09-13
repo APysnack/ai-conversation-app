@@ -42,15 +42,25 @@ class ImageGenerationService
       raise "Gemini image API error: #{body["error"]["message"]}"
     end
 
-    image = body["output_image"]
+    unless body["status"] == "completed"
+      raise "Gemini image generation did not complete. Status: #{body["status"]}"
+    end
+
+    # Find the image anywhere inside the model output.
+    image = body.fetch("steps", [])
+      .select { |step| step["type"] == "model_output" }
+      .flat_map { |step| step.fetch("content", []) }
+      .find do |content|
+        content["type"] == "image" && content["data"].present?
+      end
 
     unless image
-      raise "Gemini did not return an image"
+      raise "Gemini completed successfully but did not return image data"
     end
 
     {
       data: image["data"],
-      mime_type: image["mime_type"]
+      mime_type: image["mime_type"] || "image/jpeg"
     }
   end
 end

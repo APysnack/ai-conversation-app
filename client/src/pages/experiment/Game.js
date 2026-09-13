@@ -20,6 +20,8 @@ function Game() {
     question3: '',
   });
 
+  const [gameId] = useState(() => crypto.randomUUID());
+
   const handleTestGemini = async () => {
     const result = await dispatch(testGemini());
 
@@ -41,12 +43,30 @@ function Game() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const answerList = [answers.question1, answers.question2, answers.question3];
+    const interactions = [
+      {
+        question: geminiQuestions[0],
+        response: answers.question1,
+      },
+      {
+        question: geminiQuestions[1],
+        response: answers.question2,
+      },
+      {
+        question: geminiQuestions[2],
+        response: answers.question3,
+      },
+    ];
 
     setIsGeneratingImages(true);
     setGeneratedImages([]);
 
-    const result = await dispatch(generateImages(answerList));
+    const result = await dispatch(
+      generateImages({
+        gameId,
+        interactions,
+      })
+    );
 
     if (generateImages.fulfilled.match(result)) {
       console.log('Generated images:', result.payload);
@@ -104,6 +124,20 @@ function Game() {
                   resize: 'vertical',
                 }}
               />
+
+              {generatedImages[0] && (
+                <img
+                  src={generatedImages[0]}
+                  alt="Generated image for question 1"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '500px',
+                    margin: '20px auto 0',
+                    borderRadius: '8px',
+                  }}
+                />
+              )}
             </>
           )}
 
@@ -132,6 +166,20 @@ function Game() {
                   resize: 'vertical',
                 }}
               />
+
+              {generatedImages[1] && (
+                <img
+                  src={generatedImages[1]}
+                  alt="Generated image for question 2"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '500px',
+                    margin: '20px auto 0',
+                    borderRadius: '8px',
+                  }}
+                />
+              )}
             </>
           )}
 
@@ -160,6 +208,20 @@ function Game() {
                   resize: 'vertical',
                 }}
               />
+
+              {generatedImages[2] && (
+                <img
+                  src={generatedImages[2]}
+                  alt="Generated image for question 3"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    maxWidth: '500px',
+                    margin: '20px auto 0',
+                    borderRadius: '8px',
+                  }}
+                />
+              )}
             </>
           )}
 
@@ -184,33 +246,6 @@ function Game() {
             </button>
           )}
         </form>
-
-        {generatedImages.length > 0 && (
-          <div style={{ marginTop: '30px' }}>
-            <Instructions $color={theme.colors.text}>Generated Images</Instructions>
-
-            {generatedImages.map((image, index) => (
-              <div
-                key={index}
-                style={{
-                  marginTop: '20px',
-                }}
-              >
-                <img
-                  src={image}
-                  alt={`Generated image ${index + 1}`}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    maxWidth: '500px',
-                    margin: '0 auto',
-                    borderRadius: '8px',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </SurveyCard>
     </SurveyContainer>
   );

@@ -79,8 +79,8 @@ export const TEST_GEMINI_MUTATION = gql`
 `;
 
 export const GENERATE_IMAGES_MUTATION = gql`
-  mutation GenerateImages($answers: [String!]!) {
-    generateImages(answers: $answers) {
+  mutation GenerateImages($gameId: String!, $interactions: [JSON!]!) {
+    generateImages(gameId: $gameId, interactions: $interactions) {
       success
       images
     }
