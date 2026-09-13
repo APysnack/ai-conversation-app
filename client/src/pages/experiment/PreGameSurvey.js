@@ -103,7 +103,7 @@ function PreGameSurvey() {
 
   const handleSubmit = async () => {
     const formData = {
-      survey: {
+      preGameSurvey: {
         comfort: answers.comfort,
         personalInformation: answers.personalInformation,
         hiddenFact: answers.hiddenFact,

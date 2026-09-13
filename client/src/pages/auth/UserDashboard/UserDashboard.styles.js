@@ -30,8 +30,16 @@ export const DashboardTitle = styled.h1`
 
 export const DashboardButtonContainer = styled.div`
   display: flex;
-  justify-content: center;
-  gap: 10px;
+  margin-top: 40px;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+
+  button {
+    cursor: pointer;
+    padding: 12px 24px;
+    width: 60%;
+  }
 `;
 
 export const LogoutButton = styled.button`

@@ -17,8 +17,8 @@ module Mutations
 
       partner = User.find(partner_user_id)
 
-      current_user_survey = user.settings["survey"]
-      partner_survey = partner.settings["survey"]
+      current_user_survey = user.settings["preGameSurvey"]
+      partner_survey = partner.settings["preGameSurvey"]
 
       response = GeminiService.test(
         current_user_survey,
