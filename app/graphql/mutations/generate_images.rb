@@ -4,9 +4,10 @@ module Mutations
     field :images, [String], null: false
 
     argument :game_id, String, required: true
+    argument :partner_user_id, String, required: true
     argument :interactions, [GraphQL::Types::JSON], required: true
 
-    def resolve(game_id:, interactions:)
+    def resolve(game_id:, partner_user_id:, interactions:)
       user = context[:current_user]
 
       return {
@@ -14,42 +15,56 @@ module Mutations
         images: []
       } unless user
 
+      partner = User.find_by(id: partner_user_id)
+
+      return {
+        success: false,
+        images: []
+      } unless partner
+
+      partner_pre_game_survey = partner.settings&.dig("preGameSurvey") || {}
+
       saved_interactions = []
 
-    interactions.each do |interaction|
-      question = interaction["question"]
-      image_prompt = interaction["response"]
+      interactions.each do |interaction|
+        question = interaction["question"]
+        image_prompt = interaction["response"]
 
-      begin
-        result = ImageGenerationService.generate(image_prompt)
+        begin
+          result = ImageGenerationService.generate(image_prompt)
 
-        image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
+          image_data = "data:#{result[:mime_type]};base64,#{result[:data]}"
 
-        saved_interactions << {
-          "question" => question,
-          "response" => image_prompt,
-          "imageUrl" => image_data
-        }
-      rescue StandardError => e
-        Rails.logger.error("Image generation failed for interaction: #{e.message}")
+          saved_interactions << {
+            "question" => question,
+            "response" => image_prompt,
+            "imageUrl" => image_data
+          }
+        rescue StandardError => e
+          Rails.logger.error(
+            "Image generation failed for interaction: #{e.message}"
+          )
 
-        saved_interactions << {
-          "question" => question,
-          "response" => image_prompt,
-          "imageUrl" => nil
-        }
+          saved_interactions << {
+            "question" => question,
+            "response" => image_prompt,
+            "imageUrl" => nil
+          }
+        end
       end
-    end
 
-      game_data = {
-        "gameId" => game_id,
-        "interactions" => saved_interactions
-      }
+    game_data = {
+      "gameId" => game_id,
+      "partnerUserId" => partner_user_id,
+      "partnerEmail" => partner.email,
+      "partnerPreGameSurvey" => partner_pre_game_survey,
+      "interactions" => saved_interactions
+    }
+      # Preserve previous games instead of replacing gameData.
+      existing_game_data = user.settings&.dig("gameData") || []
 
       user.update_settings(
-        "gameData" => [
-          game_data
-        ]
+        "gameData" => existing_game_data + [game_data]
       )
 
       {
@@ -57,8 +72,13 @@ module Mutations
         images: saved_interactions.map { |interaction| interaction["imageUrl"] }
       }
     rescue StandardError => e
-      Rails.logger.error("Image generation error: #{e.class}: #{e.message}")
-      Rails.logger.error(e.backtrace.first(5).join("\n"))
+      Rails.logger.error(
+        "Image generation error: #{e.class}: #{e.message}"
+      )
+
+      Rails.logger.error(
+        e.backtrace.first(5).join("\n")
+      )
 
       {
         success: false,

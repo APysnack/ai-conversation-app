@@ -91,6 +91,7 @@ function Game() {
     const result = await dispatch(
       generateImages({
         gameId,
+        partnerUserId: selectedPartnerId,
         interactions,
       })
     );

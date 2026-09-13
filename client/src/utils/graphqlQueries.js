@@ -79,14 +79,13 @@ export const TEST_GEMINI_MUTATION = gql`
 `;
 
 export const GENERATE_IMAGES_MUTATION = gql`
-  mutation GenerateImages($gameId: String!, $interactions: [JSON!]!) {
-    generateImages(gameId: $gameId, interactions: $interactions) {
+  mutation GenerateImages($gameId: String!, $partnerUserId: String!, $interactions: [JSON!]!) {
+    generateImages(gameId: $gameId, partnerUserId: $partnerUserId, interactions: $interactions) {
       success
       images
     }
   }
 `;
-
 export const GET_USERS = gql`
   query GetUsers {
     users {
