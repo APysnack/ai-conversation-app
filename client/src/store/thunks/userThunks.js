@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   GET_CURRENT_USER,
+  GET_USERS,
   SIGN_IN_MUTATION,
   SIGN_UP_MUTATION,
   SIGN_OUT_MUTATION,
@@ -21,7 +22,6 @@ export const signInUser = createAsyncThunk(
       });
 
       if (data.signIn.success) {
-        // Refetch current user to update Apollo cache
         await client.query({ query: GET_CURRENT_USER });
         return data.signIn.user;
       } else {
@@ -44,7 +44,6 @@ export const signUpUser = createAsyncThunk(
       });
 
       if (data.signUp.success) {
-        // Refetch current user to update Apollo cache
         await client.query({ query: GET_CURRENT_USER });
         return data.signUp.user;
       } else {
@@ -73,6 +72,7 @@ export const signOutUser = createAsyncThunk('user/signOut', async (_, { rejectWi
   }
 });
 
+// Async thunk for fetching the current user
 export const fetchCurrentUser = createAsyncThunk(
   'user/fetchCurrentUser',
   async (_, { rejectWithValue }) => {
@@ -83,11 +83,23 @@ export const fetchCurrentUser = createAsyncThunk(
 
       return data.currentUser;
     } catch (error) {
-      // User is not authenticated, return null instead of rejecting
       return null;
     }
   }
 );
+
+// Async thunk for fetching all users
+export const fetchUsers = createAsyncThunk('user/fetchUsers', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await client.query({
+      query: GET_USERS,
+    });
+
+    return data.users;
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
+});
 
 export const updateUserSettings = createAsyncThunk(
   'user/updateSettings',
@@ -99,7 +111,6 @@ export const updateUserSettings = createAsyncThunk(
       });
 
       if (data.updateSettings.success) {
-        // Refetch current user to update Apollo cache
         await client.query({ query: GET_CURRENT_USER });
         return data.updateSettings.user;
       } else {
@@ -111,22 +122,27 @@ export const updateUserSettings = createAsyncThunk(
   }
 );
 
-export const testGemini = createAsyncThunk('user/testGemini', async (_, { rejectWithValue }) => {
-  try {
-    const { data } = await client.mutate({
-      mutation: TEST_GEMINI_MUTATION,
-    });
+export const testGemini = createAsyncThunk(
+  'user/testGemini',
+  async (partnerUserId, { rejectWithValue }) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: TEST_GEMINI_MUTATION,
+        variables: {
+          partnerUserId,
+        },
+      });
 
-    if (data.testGemini.success) {
-      return data.testGemini.questions;
-    } else {
-      return rejectWithValue('Gemini request failed');
+      if (data.testGemini.success) {
+        return data.testGemini.questions;
+      } else {
+        return rejectWithValue('Gemini request failed');
+      }
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  } catch (error) {
-    return rejectWithValue(error.message);
   }
-});
-
+);
 export const generateImages = createAsyncThunk(
   'user/generateImages',
   async ({ gameId, interactions }, { rejectWithValue }) => {

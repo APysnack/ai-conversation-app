@@ -70,8 +70,8 @@ export const UPDATE_SETTINGS_MUTATION = gql`
 `;
 
 export const TEST_GEMINI_MUTATION = gql`
-  mutation TestGemini {
-    testGemini {
+  mutation TestGemini($partnerUserId: String!) {
+    testGemini(partnerUserId: $partnerUserId) {
       success
       questions
     }
@@ -83,6 +83,18 @@ export const GENERATE_IMAGES_MUTATION = gql`
     generateImages(gameId: $gameId, interactions: $interactions) {
       success
       images
+    }
+  }
+`;
+
+export const GET_USERS = gql`
+  query GetUsers {
+    users {
+      id
+      email
+    }
+    currentUser {
+      id
     }
   }
 `;

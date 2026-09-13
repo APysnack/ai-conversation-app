@@ -3,6 +3,7 @@ export {
   signUpUser,
   signOutUser,
   fetchCurrentUser,
+  fetchUsers,
   updateUserSettings,
   testGemini,
   generateImages,
