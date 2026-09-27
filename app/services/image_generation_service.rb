@@ -135,7 +135,7 @@ class ImageGenerationService
       Use the CURRENT PARTICIPANT'S RESPONSE as the primary source for the
       image.
 
-      Use the information about both participants as additional context that
+      Please use the information about both participants as additional context that
       may help personalize and enrich the image.
 
       The image should represent the participant's response in an interesting,
