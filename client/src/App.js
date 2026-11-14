@@ -15,9 +15,33 @@ import Header from './components/Header';
 import AuthRoute from './pages/auth/AuthRoute';
 
 import Game from './pages/experiment/Game';
+import Preparation from './pages/experiment/Preparation';
 import PostGameSurvey from './pages/experiment/PostGameSurvey';
 import PreGameSurvey from './pages/experiment/PreGameSurvey';
 import UserData from './pages/experiment/UserData';
+
+import AdminPage from './pages/AdminPage';
+import GameSessionPresentation from './pages/admin/GameSessionPresentation';
+
+function AdminRoute() {
+  const user = useSelector((state) => state.user.user);
+
+  if (!user?.isAdmin) {
+    return <Navigate to="/members" replace />;
+  }
+
+  return <AdminPage />;
+}
+
+function AdminGameSessionRoute() {
+  const user = useSelector((state) => state.user.user);
+
+  if (!user?.isAdmin) {
+    return <Navigate to="/members" replace />;
+  }
+
+  return <GameSessionPresentation />;
+}
 
 function App() {
   const dispatch = useDispatch();
@@ -46,9 +70,11 @@ function App() {
 
             <Route path="/settings" element={<ProtectedRoute element={<SettingsPage />} />} />
 
-            <Route path="/game" element={<ProtectedRoute element={<Game />} />} />
-
             <Route path="/pregame" element={<ProtectedRoute element={<PreGameSurvey />} />} />
+
+            <Route path="/preparation" element={<ProtectedRoute element={<Preparation />} />} />
+
+            <Route path="/game" element={<ProtectedRoute element={<Game />} />} />
 
             <Route
               path="/postgame/:gameId"
@@ -56,6 +82,13 @@ function App() {
             />
 
             <Route path="/data" element={<ProtectedRoute element={<UserData />} />} />
+
+            <Route path="/admin" element={<ProtectedRoute element={<AdminRoute />} />} />
+
+            <Route
+              path="/admin/game-sessions/:id"
+              element={<ProtectedRoute element={<AdminGameSessionRoute />} />}
+            />
 
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -13,31 +13,121 @@ import {
 } from './PreGameSurvey.styles';
 
 import { useTheme } from '../../context/ThemeContext';
-import { updateUserSettings } from '../../store/thunks';
+
+import {
+  GET_MY_GAME_PARTICIPATIONS,
+  UPDATE_GAME_PARTICIPATION_MUTATION,
+} from '../../utils/graphqlQueries';
 
 function PostGameSurvey() {
   const { theme } = useTheme();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { gameId } = useParams();
 
-  const currentUser = useSelector((state) => state.user.user);
-
   const [answer, setAnswer] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState('');
 
-  const settings = currentUser?.settings || {};
-  const gameData = settings.gameData || [];
+  const {
+    data,
+    loading: loadingParticipations,
+    error: participationError,
+  } = useQuery(GET_MY_GAME_PARTICIPATIONS);
 
-  const game = gameData.find((game) => game.gameId === gameId);
+  const [updateGameParticipation, { loading: isSubmitting }] = useMutation(
+    UPDATE_GAME_PARTICIPATION_MUTATION
+  );
+
+  const participations = data?.myGameParticipations || [];
+
+  const participation = participations.find(
+    (item) => String(item.gameSession?.id) === String(gameId)
+  );
+
+  const gameSession = participation?.gameSession;
+
+  const currentUserId = participation?.user?.id;
+
+  const partner = [gameSession?.userOne, gameSession?.userTwo].find(
+    (user) => String(user?.id) !== String(currentUserId)
+  );
+
+  const partnerEmail = partner?.email || 'your conversation partner';
+
+  const savedAnswer = participation?.postGameSurvey?.interactionAgain;
 
   useEffect(() => {
-    if (game?.postGameSurvey?.interactionAgain) {
-      setAnswer(game.postGameSurvey.interactionAgain);
-    }
-  }, [game]);
+    setAnswer(savedAnswer ? String(savedAnswer) : '');
+  }, [participation?.id, savedAnswer]);
 
-  if (!game) {
+  const handleSubmit = async () => {
+    if (!answer || !participation || isSubmitting) {
+      return;
+    }
+
+    setSubmissionError('');
+
+    try {
+      const result = await updateGameParticipation({
+        variables: {
+          participationId: participation.id,
+          postGameSurvey: {
+            interactionAgain: Number(answer),
+          },
+        },
+      });
+
+      const response = result.data?.updateGameParticipation;
+
+      if (response?.success) {
+        navigate('/data');
+      } else {
+        setSubmissionError(response?.message || 'Something went wrong while saving your survey.');
+      }
+    } catch (error) {
+      console.error('Failed to save post-game survey:', error);
+      setSubmissionError('We could not save your survey. Please try again.');
+    }
+  };
+
+  const returnButtonStyle = {
+    marginTop: '30px',
+    padding: '12px 24px',
+    border: 'none',
+    borderRadius: '8px',
+    background: theme.colors.primaryButton,
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  };
+
+  if (loadingParticipations) {
+    return (
+      <SurveyContainer $background={theme.colors.background}>
+        <SurveyCard $background={theme.colors.card}>
+          <Instructions $color={theme.colors.text}>Loading your survey...</Instructions>
+        </SurveyCard>
+      </SurveyContainer>
+    );
+  }
+
+  if (participationError) {
+    return (
+      <SurveyContainer $background={theme.colors.background}>
+        <SurveyCard $background={theme.colors.card}>
+          <Question $background={theme.colors.primaryButton} $color="white">
+            Unable to Load Survey
+          </Question>
+
+          <Instructions $color={theme.colors.text}>
+            We couldn't retrieve your game participation. Please try again.
+          </Instructions>
+        </SurveyCard>
+      </SurveyContainer>
+    );
+  }
+
+  if (!participation) {
     return (
       <SurveyContainer $background={theme.colors.background}>
         <SurveyCard $background={theme.colors.card}>
@@ -46,24 +136,10 @@ function PostGameSurvey() {
           </Question>
 
           <Instructions $color={theme.colors.text}>
-            We couldn't find the game associated with this survey.
+            We couldn't find a game session associated with this survey in your account.
           </Instructions>
 
-          <button
-            type="button"
-            onClick={() => navigate('/data')}
-            style={{
-              marginTop: '30px',
-              padding: '12px 24px',
-              border: 'none',
-              borderRadius: '8px',
-              background: theme.colors.primaryButton,
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
-          >
+          <button type="button" onClick={() => navigate('/data')} style={returnButtonStyle}>
             Return to My Data
           </button>
         </SurveyCard>
@@ -71,44 +147,26 @@ function PostGameSurvey() {
     );
   }
 
-  const handleSubmit = async () => {
-    if (!answer || isSubmitting) {
-      return;
-    }
+  if (!participation.conversationCompletedAt) {
+    return (
+      <SurveyContainer $background={theme.colors.background}>
+        <SurveyCard $background={theme.colors.card}>
+          <Question $background={theme.colors.primaryButton} $color="white">
+            Survey Not Available Yet
+          </Question>
 
-    setIsSubmitting(true);
+          <Instructions $color={theme.colors.text}>
+            This conversation has not been marked as complete yet. You'll be able to complete your
+            survey after the conversation.
+          </Instructions>
 
-    const updatedGameData = gameData.map((currentGame) => {
-      if (currentGame.gameId !== gameId) {
-        return currentGame;
-      }
-
-      return {
-        ...currentGame,
-        postGameSurvey: {
-          interactionAgain: answer,
-        },
-      };
-    });
-
-    const formData = {
-      gameData: updatedGameData,
-    };
-
-    console.log('Post-game survey submission:', formData);
-
-    const result = await dispatch(updateUserSettings(formData));
-
-    if (updateUserSettings.fulfilled.match(result)) {
-      console.log('Post-game survey successfully saved!');
-
-      navigate('/data');
-    } else {
-      console.error('Failed to save post-game survey:', result.payload);
-
-      setIsSubmitting(false);
-    }
-  };
+          <button type="button" onClick={() => navigate('/data')} style={returnButtonStyle}>
+            Return to My Data
+          </button>
+        </SurveyCard>
+      </SurveyContainer>
+    );
+  }
 
   return (
     <SurveyContainer $background={theme.colors.background}>
@@ -117,7 +175,7 @@ function PostGameSurvey() {
           How likely would you be to interact with this person again?
         </Question>
 
-        <Instructions $color={theme.colors.text}>Game with {game.partnerEmail}</Instructions>
+        <Instructions $color={theme.colors.text}>Game with {partnerEmail}</Instructions>
 
         <Options>
           {[1, 2, 3, 4, 5, 6, 7].map((value) => (
@@ -137,6 +195,8 @@ function PostGameSurvey() {
           <span>Neutral</span>
           <span>Very likely</span>
         </ScaleLabel>
+
+        {submissionError && <Instructions $color="red">{submissionError}</Instructions>}
 
         <button
           type="button"

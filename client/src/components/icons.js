@@ -79,3 +79,21 @@ export const SettingsIcon = ({ color }) => (
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
+
+export const AdminIcon = ({ color }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <path d="M8 7h8" />
+    <path d="M8 11h8" />
+    <path d="M8 15h5" />
+  </svg>
+);

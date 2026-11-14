@@ -10,9 +10,35 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_11_21_100000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_14_203652) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "game_participations", force: :cascade do |t|
+    t.bigint "game_session_id", null: false
+    t.bigint "user_id", null: false
+    t.jsonb "preparation_data", default: {}, null: false
+    t.jsonb "generated_images", default: [], null: false
+    t.jsonb "post_game_survey", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "conversation_completed_at"
+    t.index ["game_session_id", "user_id"], name: "index_game_participations_on_session_and_user", unique: true
+    t.index ["game_session_id"], name: "index_game_participations_on_game_session_id"
+    t.index ["user_id"], name: "index_game_participations_on_user_id"
+  end
+
+  create_table "game_sessions", force: :cascade do |t|
+    t.bigint "user_one_id", null: false
+    t.bigint "user_two_id", null: false
+    t.string "condition", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "system_settings", default: {}, null: false
+    t.index ["user_one_id"], name: "index_game_sessions_on_user_one_id"
+    t.index ["user_two_id"], name: "index_game_sessions_on_user_two_id"
+  end
 
   create_table "roles", force: :cascade do |t|
     t.string "name"
@@ -47,4 +73,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_11_21_100000) do
     t.index ["user_id"], name: "index_users_roles_on_user_id"
   end
 
+  add_foreign_key "game_participations", "game_sessions"
+  add_foreign_key "game_participations", "users"
+  add_foreign_key "game_sessions", "users", column: "user_one_id"
+  add_foreign_key "game_sessions", "users", column: "user_two_id"
 end
