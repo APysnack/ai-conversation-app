@@ -7,4 +7,5 @@ export {
   updateUserSettings,
   testGemini,
   generateImages,
+  createGameSession,
 } from './userThunks';

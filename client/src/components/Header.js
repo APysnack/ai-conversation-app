@@ -4,7 +4,7 @@ import { signOutUser } from '../store/thunks';
 import { LogoutButton } from '../pages/auth/UserDashboard/DashboardElements';
 import { useTheme } from '../context/ThemeContext';
 import { HeaderBar, Brand, Logo, Title, Actions, ActionItem } from './Header.styles';
-import { MembersIcon, LogoutIcon, SettingsIcon, AtomLogo } from './icons';
+import { MembersIcon, LogoutIcon, SettingsIcon, AdminIcon, AtomLogo } from './icons';
 
 function Header({ title }) {
   const navigate = useNavigate();
@@ -14,9 +14,13 @@ function Header({ title }) {
   const colors = theme?.colors || {};
 
   const loading = useSelector((state) => state.user.loading);
+  const user = useSelector((state) => state.user.user);
 
   const actionItems = [
     { label: 'Members', to: '/members', icon: MembersIcon },
+
+    ...(user?.isAdmin ? [{ label: 'Admin', to: '/admin', icon: AdminIcon }] : []),
+
     { label: 'Settings', to: '/settings', icon: SettingsIcon },
   ];
 
@@ -42,6 +46,7 @@ function Header({ title }) {
         {actionItems.map((item) => {
           const isActive =
             location.pathname === item.to || location.pathname.startsWith(item.to + '/');
+
           return (
             <ActionItem
               key={item.to}
@@ -57,6 +62,7 @@ function Header({ title }) {
             </ActionItem>
           );
         })}
+
         <LogoutButton onClick={handleLogout} disabled={loading} title="Log out">
           <LogoutIcon color="white" />
         </LogoutButton>

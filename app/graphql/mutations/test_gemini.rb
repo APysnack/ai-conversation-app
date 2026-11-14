@@ -1,3 +1,4 @@
+
 require "json"
 
 module Mutations
@@ -5,10 +6,9 @@ module Mutations
     field :success, Boolean, null: false
     field :questions, [GraphQL::Types::JSON], null: false
 
-    argument :partner_user_id, String, required: true
-    argument :system_settings, GraphQL::Types::JSON, required: true
+    argument :participation_id, ID, required: true
 
-    def resolve(partner_user_id:, system_settings:)
+    def resolve(participation_id:)
       user = context[:current_user]
 
       return {
@@ -16,14 +16,47 @@ module Mutations
         questions: []
       } unless user
 
-      partner = User.find(partner_user_id)
+      # Find the current user's participation.
+      participation = user.game_participations.find_by(
+        id: participation_id
+      )
 
+      return {
+        success: false,
+        questions: []
+      } unless participation
+
+      game_session = participation.game_session
+
+      # Question generation is only for AI-mediated sessions.
+      unless game_session.condition == "ai_mediated"
+        return {
+          success: false,
+          questions: []
+        }
+      end
+
+      # Determine the other participant from the shared game session.
+      partner =
+        if game_session.user_one_id == user.id
+          game_session.user_two
+        else
+          game_session.user_one
+        end
+
+      # Retrieve both participants' pregame surveys.
       current_user_survey =
-        user.settings["preGameSurvey"] || {}
+        user.settings&.dig("preGameSurvey") || {}
 
       partner_survey =
-        partner.settings["preGameSurvey"] || {}
+        partner.settings&.dig("preGameSurvey") || {}
 
+      # Read configuration directly from the game session.
+      system_settings =
+        game_session.system_settings.presence ||
+        GameConfiguration::SYSTEM_SETTINGS
+
+      # Generate the questions.
       response = GeminiService.test(
         current_user_survey,
         partner_survey,
@@ -31,10 +64,27 @@ module Mutations
       )
 
       parsed_response = JSON.parse(response)
+      questions = parsed_response["questions"]
+
+      unless questions.is_a?(Array) && questions.length == 3
+        raise "Gemini did not return exactly three questions."
+      end
+
+      # Preserve existing preparation data.
+      existing_data = participation.preparation_data || {}
+
+      updated_data = existing_data.merge(
+        "questions" => questions
+      )
+
+      # Save the questions to this participant's record.
+      participation.update!(
+        preparation_data: updated_data
+      )
 
       {
         success: true,
-        questions: parsed_response["questions"]
+        questions: questions
       }
     rescue StandardError => e
       Rails.logger.error(

@@ -13,16 +13,12 @@ function UserDashboard() {
             <button>Pre-game Survey</button>
           </Link>
 
-          <Link to="/game">
-            <button>Game</button>
+          <Link to="/preparation">
+            <button>Preparation</button>
           </Link>
 
           <Link to="/postgame">
             <button>Post-game Survey</button>
-          </Link>
-
-          <Link to="/data">
-            <button>View My Data</button>
           </Link>
         </DashboardButtonContainer>
       </DashboardCard>

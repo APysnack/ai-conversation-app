@@ -7,7 +7,7 @@ class GeminiService
     partner_information = nil,
     system_settings = nil
   )
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+  url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
 
     current_user_information ||= "[CURRENT PARTICIPANT INFORMATION WILL GO HERE]"
     partner_information ||= "[PARTNER INFORMATION WILL GO HERE]"
@@ -410,25 +410,64 @@ class GeminiService
       "-d", request_body
     ]
 
-    stdout, stderr, status = Open3.capture3(*command)
 
-    unless status.success?
-      raise "Gemini request failed: #{stderr}"
+    max_attempts = 4
+    attempts_used = 1
+
+    retryable_status_codes = [408, 429, 500, 502, 503, 504]
+
+    loop do
+      puts "Gemini API request: attempt #{attempts_used}/#{max_attempts}"
+
+      stdout, stderr, status = Open3.capture3(*command)
+
+      # Handle network-level errors
+      unless status.success?
+        if attempts_used < max_attempts
+          delay = 2 ** (attempts_used - 1)
+
+          puts "Gemini request failed. Retrying in #{delay} seconds..."
+          sleep(delay + rand * 0.5)
+
+          attempts_used += 1
+          next
+        end
+
+        raise "Gemini request failed after #{attempts_used} attempts: #{stderr}"
+      end
+
+      body = JSON.parse(stdout)
+
+      # Handle Gemini API errors
+      if body["error"]
+        error_code = body.dig("error", "code").to_i
+        error_message = body.dig("error", "message")
+
+        if retryable_status_codes.include?(error_code) &&
+          attempts_used < max_attempts
+
+          delay = 2 ** (attempts_used - 1)
+
+          puts "Gemini API error (#{error_code}): #{error_message}"
+          puts "Retrying in #{delay} seconds..."
+
+          sleep(delay + rand * 0.5)
+
+          attempts_used += 1
+          next
+        end
+
+        raise "Gemini API error (#{error_code}): #{error_message}"
+      end
+
+      return body.dig(
+        "candidates",
+        0,
+        "content",
+        "parts",
+        0,
+        "text"
+      )
+      end
     end
-
-    body = JSON.parse(stdout)
-
-    if body["error"]
-      raise "Gemini API error: #{body["error"]["message"]}"
-    end
-
-    body.dig(
-      "candidates",
-      0,
-      "content",
-      "parts",
-      0,
-      "text"
-    )
-  end
 end

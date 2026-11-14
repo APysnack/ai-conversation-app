@@ -1,4 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+
 import {
   GET_CURRENT_USER,
   GET_USERS,
@@ -8,10 +9,22 @@ import {
   UPDATE_SETTINGS_MUTATION,
   TEST_GEMINI_MUTATION,
   GENERATE_IMAGES_MUTATION,
+  CREATE_GAME_SESSION_MUTATION,
 } from '../../utils/graphqlQueries';
+
 import client from '../../utils/apolloClient';
 
-// Async thunk for signing in
+// Fetch the complete current user, including isAdmin.
+const getCurrentUser = async () => {
+  const { data } = await client.query({
+    query: GET_CURRENT_USER,
+    fetchPolicy: 'network-only',
+  });
+
+  return data.currentUser;
+};
+
+// Sign in
 export const signInUser = createAsyncThunk(
   'user/signIn',
   async ({ email, password }, { rejectWithValue }) => {
@@ -21,19 +34,18 @@ export const signInUser = createAsyncThunk(
         variables: { email, password },
       });
 
-      if (data.signIn.success) {
-        await client.query({ query: GET_CURRENT_USER });
-        return data.signIn.user;
-      } else {
+      if (!data.signIn.success) {
         return rejectWithValue(data.signIn.message);
       }
+
+      return await getCurrentUser();
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for signing up
+// Sign up
 export const signUpUser = createAsyncThunk(
   'user/signUp',
   async ({ email, password, passwordConfirmation }, { rejectWithValue }) => {
@@ -43,19 +55,18 @@ export const signUpUser = createAsyncThunk(
         variables: { email, password, passwordConfirmation },
       });
 
-      if (data.signUp.success) {
-        await client.query({ query: GET_CURRENT_USER });
-        return data.signUp.user;
-      } else {
+      if (!data.signUp.success) {
         return rejectWithValue(data.signUp.message);
       }
+
+      return await getCurrentUser();
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk for signing out
+// Sign out
 export const signOutUser = createAsyncThunk('user/signOut', async (_, { rejectWithValue }) => {
   try {
     const { data } = await client.mutate({
@@ -64,35 +75,32 @@ export const signOutUser = createAsyncThunk('user/signOut', async (_, { rejectWi
 
     if (data.signOut.success) {
       return null;
-    } else {
-      return rejectWithValue(data.signOut.message);
     }
+
+    return rejectWithValue(data.signOut.message);
   } catch (error) {
     return rejectWithValue(error.message);
   }
 });
 
-// Async thunk for fetching the current user
+// Fetch current user
 export const fetchCurrentUser = createAsyncThunk(
   'user/fetchCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await client.query({
-        query: GET_CURRENT_USER,
-      });
-
-      return data.currentUser;
+      return await getCurrentUser();
     } catch (error) {
       return null;
     }
   }
 );
 
-// Async thunk for fetching all users
+// Fetch all users
 export const fetchUsers = createAsyncThunk('user/fetchUsers', async (_, { rejectWithValue }) => {
   try {
     const { data } = await client.query({
       query: GET_USERS,
+      fetchPolicy: 'network-only',
     });
 
     return {
@@ -104,6 +112,33 @@ export const fetchUsers = createAsyncThunk('user/fetchUsers', async (_, { reject
   }
 });
 
+// Create a game session between two participants (admin only).
+export const createGameSession = createAsyncThunk(
+  'user/createGameSession',
+  async ({ userOneId, userTwoId, condition, systemSettings }, { rejectWithValue }) => {
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_GAME_SESSION_MUTATION,
+        variables: {
+          userOneId,
+          userTwoId,
+          condition,
+          systemSettings,
+        },
+      });
+
+      if (!data.createGameSession.success) {
+        return rejectWithValue(data.createGameSession.message);
+      }
+
+      return data.createGameSession.gameSession;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Update user settings
 export const updateUserSettings = createAsyncThunk(
   'user/updateSettings',
   async (settings, { rejectWithValue }) => {
@@ -113,44 +148,44 @@ export const updateUserSettings = createAsyncThunk(
         variables: { settings },
       });
 
-      if (data.updateSettings.success) {
-        await client.query({ query: GET_CURRENT_USER });
-        return data.updateSettings.user;
-      } else {
+      if (!data.updateSettings.success) {
         return rejectWithValue(data.updateSettings.message);
       }
+
+      return await getCurrentUser();
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
+// Generate Gemini questions
 export const testGemini = createAsyncThunk(
   'user/testGemini',
-  async ({ partnerUserId, systemSettings }, { rejectWithValue }) => {
+  async ({ participationId }, { rejectWithValue }) => {
     try {
       const { data } = await client.mutate({
         mutation: TEST_GEMINI_MUTATION,
         variables: {
-          partnerUserId,
-          systemSettings,
+          participationId,
         },
       });
 
       if (data.testGemini.success) {
         return data.testGemini.questions;
-      } else {
-        return rejectWithValue('Gemini request failed');
       }
+
+      return rejectWithValue('Gemini question generation failed');
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
+// Generate images
 export const generateImages = createAsyncThunk(
   'user/generateImages',
-  async ({ gameId, partnerUserId, interactions, systemSettings }, { rejectWithValue }) => {
+  async ({ gameId, partnerUserId, interactions }, { rejectWithValue }) => {
     try {
       const { data } = await client.mutate({
         mutation: GENERATE_IMAGES_MUTATION,
@@ -158,15 +193,14 @@ export const generateImages = createAsyncThunk(
           gameId,
           partnerUserId,
           interactions,
-          systemSettings,
         },
       });
 
       if (data.generateImages.success) {
         return data.generateImages.images;
-      } else {
-        return rejectWithValue('Image generation failed');
       }
+
+      return rejectWithValue('Image generation failed');
     } catch (error) {
       return rejectWithValue(error.message);
     }
